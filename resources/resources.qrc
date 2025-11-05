@@ -1,0 +1,18 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/icons">
+    <file>icons/open.svg</file>
+    <file>icons/save.svg</file>
+    <file>icons/save-as.svg</file>
+    <file>icons/import.svg</file>
+    <file>icons/exit.svg</file>
+    <file>icons/settings.svg</file>
+    <file>icons/help.svg</file>
+    <file>icons/play.svg</file>
+    <file>icons/pause.svg</file>
+    <file>icons/resume.svg</file>
+    <file>icons/refresh.svg</file>
+    <file>icons/export.svg</file>
+    <file>icons/logo.svg</file>
+  </qresource>
+</RCC>

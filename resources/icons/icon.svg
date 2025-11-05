@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="titleDesc">
+  <title id="titleDesc">RTPlotter icon — real-time plot</title>
+
+  <!-- Variables de style : facile à modifier -->
+  <defs>
+    <style type="text/css"><![CDATA[
+      .frame { fill: none; stroke: #ffffff; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }
+      .grid { fill: none; stroke: #ffffff; stroke-width: 1; stroke-linecap: round; opacity: 0.06; }
+  .axis { fill: none; stroke: #ffffff; stroke-width: 6; stroke-linecap: round; opacity: 0.95; }
+  .curve { fill: none; stroke: #E03C00; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+  /* dot fill uses same color as curve to visually link them */
+  .dot { stroke: #ffffff; stroke-width: 2; fill: #E03C00; }
+      .play { fill: #00E0B0; opacity: 0.95; }
+    ]]></style>
+  </defs>
+
+  <!-- Background (transparent) -->
+  <rect x="0" y="0" width="256" height="256" fill="none"/>
+
+  <!-- Frame (rounded square) -->
+  <rect x="18" y="18" width="220" height="220" rx="16" ry="16" class="frame"/>
+
+  <!-- Light grid (subtle, to suggest plotting area) -->
+  <!-- vertical lines -->
+  <g class="grid">
+    <line x1="56" y1="40" x2="56" y2="216"/>
+    <line x1="96" y1="40" x2="96" y2="216"/>
+    <line x1="136" y1="40" x2="136" y2="216"/>
+    <line x1="176" y1="40" x2="176" y2="216"/>
+    <line x1="216" y1="40" x2="216" y2="216"/>
+    <!-- horizontal lines -->
+    <line x1="40" y1="72" x2="216" y2="72"/>
+    <line x1="40" y1="104" x2="216" y2="104"/>
+    <line x1="40" y1="136" x2="216" y2="136"/>
+    <line x1="40" y1="168" x2="216" y2="168"/>
+    <line x1="40" y1="200" x2="216" y2="200"/>
+  </g>
+
+  <!-- Axes (bottom-left inside frame) -->
+  <g transform="translate(40,40)">
+    <!-- Y axis -->
+    <line x1="0" y1="0" x2="0" y2="176" class="axis"/>
+    <!-- X axis -->
+  <line x1="0" y1="176" x2="176" y2="176" class="axis"/>
+    <!-- Axis arrowheads (enlarged for better visibility at small icon sizes) -->
+    <!-- Y axis arrow (top) -->
+    <polygon points="0,-8 10,8 -10,8" fill="#ffffff" opacity="0.95" transform="translate(0,0)"/>
+  <!-- X axis arrowhead placed exactly at the axis end (larger) - shifted slightly right -->
+  <polygon points="184,176 176,168 176,184" fill="#ffffff" opacity="0.95"/>
+  </g>
+
+  <!-- Curve path (sinus-like) inside plotting area; positioned to fit axes -->
+  <!-- Path drawn in local coords shifted to match axes origin at (40,40) -->
+  <g transform="translate(40,40)">
+    <path d="M 0 112
+             C 24 88, 48 56, 72 72
+             C 96 88, 120 200, 144 160
+             C 168 120, 192 96, 216 128"
+          class="curve" />
+    <!-- Moving dot placed on the curve (t=0.5 of the last bezier segment), size doubled -->
+    <circle cx="180" cy="117" r="12" class="dot"/>
+  </g>
+
+  <!-- Small 'play / realtime' badge top-right (optional accent) -->
+  <g transform="translate(170,30)">
+    <rect x="0" y="0" width="52" height="28" rx="6" ry="6" fill="#0A2740" opacity="0.7"/>
+    <!-- equilateral play triangle centered at (26,14) inside the badge -->
+    <!-- side ~18, centroid at (26,14) -->
+    <polygon points="36.392,14 20.804,23 20.804,5" class="play"/>
+  </g>
+
+  <!-- Thin outline accent (inner) to increase contrast on small sizes -->
+  <rect x="22" y="22" width="212" height="212" rx="14" ry="14" fill="none" stroke="#000000" stroke-width="0.5" opacity="0.06"/>
+</svg>

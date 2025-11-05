@@ -1,0 +1,5 @@
+.DS_Store
+build/
+*.rtplotter.json
+*.log
+*.aux

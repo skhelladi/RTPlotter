@@ -1,0 +1,45 @@
+{
+    "dataFile": "/Users/khelladi/Codes/0.Computational_Physics/0.Tools/RTPlotter/sample.csv",
+    "parser": {
+        "filePath": "/Users/khelladi/Codes/0.Computational_Physics/0.Tools/RTPlotter/sample.csv",
+        "hasHeader": true,
+        "ignoreNonNumeric": false,
+        "separator": ",",
+        "startLine": 1
+    },
+    "paused": false,
+    "plots": [
+        {
+            "color": "#ff0000",
+            "graph": -1,
+            "name": "time",
+            "role": 1,
+            "style": 0,
+            "thickness": 1
+        },
+        {
+            "color": "#00ff00",
+            "graph": 0,
+            "name": "sin",
+            "role": 2,
+            "style": 0,
+            "thickness": 1
+        },
+        {
+            "color": "#0000ff",
+            "graph": 0,
+            "name": "cos",
+            "role": 2,
+            "style": 0,
+            "thickness": 1
+        },
+        {
+            "color": "#ff00ff",
+            "graph": 0,
+            "name": "tan",
+            "role": 2,
+            "style": 0,
+            "thickness": 1
+        }
+    ]
+}
