@@ -16,6 +16,8 @@
 #include <QSvgRenderer>
 #include <QPixmap>
 #include <QPainter>
+#include <QDesktopServices>
+#include <QUrl>
 
 // Helper to render an SVG resource to a QPixmap at a given size
 static QPixmap loadSvgPixmap(const QString& path, const QSize& size)
@@ -104,6 +106,17 @@ MainWindow::MainWindow(QWidget *parent) :
     // Use menus/actions declared in the .ui file.
     menuBar()->setFixedHeight(22);
 
+    // Initialize recent projects
+    m_recentProjectsMenu = ui->menuRecentProjects;
+    loadRecentProjects();
+    updateRecentProjectsMenu();
+
+    // Ensure status bar is cleared when recent projects menu hides
+    if (m_recentProjectsMenu) {
+        connect(m_recentProjectsMenu, &QMenu::aboutToHide, this, [this]() {
+            if (ui && ui->statusbar) ui->statusbar->clearMessage();
+        });
+    }
     // Connect UI actions (defined in ui/MainWindow.ui)
     // File menu: Open/Save/Save As
     connect(ui->actionOpenProject, &QAction::triggered, this, [this]() {
@@ -113,7 +126,9 @@ MainWindow::MainWindow(QWidget *parent) :
             if (p.endsWith(".csv", Qt::CaseInsensitive)) {
                 importCSV(p);
             } else {
-                loadProjectFromPath(p);
+                if (loadProjectFromPath(p)) {
+                    addRecentProject(p);
+                }
             }
         }
     });
@@ -137,8 +152,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionExit, &QAction::triggered, this, &QWidget::close);
     // Configuration -> Plot options
     connect(ui->actionPlotOptions, &QAction::triggered, this, &MainWindow::on_actionConfigurePlots_triggered);
-    // Help -> About
-    connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::on_actionAbout_triggered);
+    // Help -> About (connected via Qt auto-connect to on_actionAbout_triggered in UI)
+    // File -> Recent Projects -> Clear
+    connect(ui->actionClearRecentProjects, &QAction::triggered, this, [this]() {
+        m_recentProjects.clear();
+        saveRecentProjects();
+        updateRecentProjectsMenu();
+    });
 
     // Differentiate icons: Open project vs Import data
     ui->actionOpenProject->setIcon(loadThemeAwareIcon(":/icons/icons/open.svg"));
@@ -154,6 +174,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->actionConfigurePlots->setIcon(loadThemeAwareIcon(":/icons/icons/settings.svg"));
     // initial pause state = running (so show pause icon)
     m_paused = false;
+    // Initialize logarithmic axis flags to a safe default
+    m_logarithmicYAxis = false;
+    m_logarithmicXAxis = false;
     ui->actionPause->setIcon(loadThemeAwareIcon(":/icons/icons/pause.svg"));
     ui->actionPause->setToolTip(tr("Pause updates"));
     ui->actionResetZoom->setIcon(loadThemeAwareIcon(":/icons/icons/refresh.svg"));
@@ -216,8 +239,13 @@ void MainWindow::on_actionConfigurePlots_triggered()
     QStringList headers = m_reader.getHeaders();
     // Pass current plot configs as initial settings so the dialog preserves state
     PlotConfigDialog dlg(headers, m_plotConfigs, this);
+    // Initialize checkbox states with current values
+    dlg.setLogarithmicYAxis(m_logarithmicYAxis);
+    dlg.setLogarithmicXAxis(m_logarithmicXAxis);
     if (dlg.exec() == QDialog::Accepted) {
         setPlotConfig(dlg.getPlotConfig());
+        m_logarithmicYAxis = dlg.isLogarithmicYAxis();
+        m_logarithmicXAxis = dlg.isLogarithmicXAxis();
         // Clear existing plots and re-create
         setupPlots();
         m_dirty = true;
@@ -233,7 +261,7 @@ void MainWindow::on_actionAbout_triggered()
     // Create a rich About dialog that includes the logo
     QMessageBox about(this);
     about.setWindowTitle(tr("About RTPlotter"));
-    about.setText(tr("<b>RTPlotter</b><br/>Real-Time Data Plotter<br/>Author: Prof. Sofiane KHELLADI &lt;sofiane@khelladi.page&gt;"));
+    about.setText(tr("<b>RTPlotter</b><br/>Real-Time Data Plotter<br/>Author: Sofiane KHELLADI &lt;sofiane@khelladi.page&gt;"));
     // Render the SVG at 64x64 and set as the icon pixmap
     QPixmap logo = loadSvgPixmap(":/icons/icons/logo.svg", QSize(64,64));
     if (!logo.isNull()) {
@@ -304,6 +332,9 @@ void MainWindow::saveConfigForFile(const QString& filePath)
         plotsArray.append(o);
     }
     root["plots"] = plotsArray;
+    // Save logarithmic axes settings
+    root["logarithmicYAxis"] = m_logarithmicYAxis;
+    root["logarithmicXAxis"] = m_logarithmicXAxis;
 
     QJsonDocument doc(root);
     QFile f(cfgPath);
@@ -355,8 +386,18 @@ bool MainWindow::loadConfigForFile(const QString& filePath)
             configs.append(pc);
         }
         setPlotConfig(configs);
+        // Load logarithmic axes settings from file BEFORE calling setupPlots
+        if (root.contains("logarithmicYAxis")) {
+            m_logarithmicYAxis = root["logarithmicYAxis"].toBool();
+            qDebug() << "loadConfigForFile: loaded logarithmicYAxis=" << m_logarithmicYAxis;
+        }
+        if (root.contains("logarithmicXAxis")) {
+            m_logarithmicXAxis = root["logarithmicXAxis"].toBool();
+            qDebug() << "loadConfigForFile: loaded logarithmicXAxis=" << m_logarithmicXAxis;
+        }
         setupPlots();
     }
+    // (logarithmic axes already handled above before setupPlots)
     return true;
 }
 
@@ -415,11 +456,24 @@ void MainWindow::importCSV(const QString& filePath)
                     initialConfigs.append(pc);
                 }
             }
+            
+            // Load logarithmic axes settings from sidecar if present
+            if (sidecarObj.contains("logarithmicYAxis")) {
+                m_logarithmicYAxis = sidecarObj["logarithmicYAxis"].toBool();
+            }
+            if (sidecarObj.contains("logarithmicXAxis")) {
+                m_logarithmicXAxis = sidecarObj["logarithmicXAxis"].toBool();
+            }
 
             // Show plot configuration dialog after loading data
             PlotConfigDialog plotDlg(m_reader.getHeaders(), initialConfigs, this);
+            // Initialize checkbox states from loaded sidecar/project values
+            plotDlg.setLogarithmicYAxis(m_logarithmicYAxis);
+            plotDlg.setLogarithmicXAxis(m_logarithmicXAxis);
             if (plotDlg.exec() == QDialog::Accepted) {
                 setPlotConfig(plotDlg.getPlotConfig());
+                m_logarithmicYAxis = plotDlg.isLogarithmicYAxis();
+                m_logarithmicXAxis = plotDlg.isLogarithmicXAxis();
                 setupPlots();
                 // save sidecar with parser + plots
                 QJsonObject root;
@@ -436,6 +490,8 @@ void MainWindow::importCSV(const QString& filePath)
                     parr.append(o);
                 }
                 root["plots"] = parr;
+                root["logarithmicYAxis"] = m_logarithmicYAxis;
+                root["logarithmicXAxis"] = m_logarithmicXAxis;
                 QFile sf(m_reader.getFilePath() + ".rtplotter.json");
                 if (sf.open(QIODevice::WriteOnly | QIODevice::Text)) {
                     sf.write(QJsonDocument(root).toJson());
@@ -471,6 +527,8 @@ void MainWindow::saveProjectToPath(const QString& path)
     }
     root["plots"] = parr;
     root["paused"] = m_paused;
+    root["logarithmicYAxis"] = m_logarithmicYAxis;
+    root["logarithmicXAxis"] = m_logarithmicXAxis;
 
     QSaveFile f(outPath);
     if (!f.open(QIODevice::WriteOnly)) {
@@ -485,6 +543,7 @@ void MainWindow::saveProjectToPath(const QString& path)
     m_projectPath = outPath;
     m_dirty = false;
     updateStatusBar();
+    addRecentProject(outPath);
 }
 
 bool MainWindow::loadProjectFromPath(const QString& path)
@@ -537,6 +596,15 @@ bool MainWindow::loadProjectFromPath(const QString& path)
         }
     }
     setPlotConfig(configs);
+    // Load logarithmic axes state BEFORE creating plots so the setting is applied
+    if (root.contains("logarithmicYAxis")) {
+        m_logarithmicYAxis = root["logarithmicYAxis"].toBool();
+        qDebug() << "loadProjectFromPath: loaded logarithmicYAxis=" << m_logarithmicYAxis;
+    }
+    if (root.contains("logarithmicXAxis")) {
+        m_logarithmicXAxis = root["logarithmicXAxis"].toBool();
+        qDebug() << "loadProjectFromPath: loaded logarithmicXAxis=" << m_logarithmicXAxis;
+    }
     // Set reader and setup plots (no dialogs)
     setReader(m_reader);
     // paused state
@@ -545,6 +613,7 @@ bool MainWindow::loadProjectFromPath(const QString& path)
         if (m_paused) ui->actionPause->setIcon(loadColoredIcon(":/icons/icons/resume.svg", QColor("#4CAF50")));
         else ui->actionPause->setIcon(loadThemeAwareIcon(":/icons/icons/pause.svg"));
     }
+    // (flags already loaded earlier before setup)
     m_projectPath = path;
     m_dirty = false;
     updateStatusBar();
@@ -739,6 +808,13 @@ void MainWindow::setupPlots()
             }
         }
 
+        // Apply logarithmic axes setting to all plots
+        for (auto it = plots.begin(); it != plots.end(); ++it) {
+            int plotId = it.key();
+            m_plotManager.setLogarithmicYAxis(plotId, m_logarithmicYAxis);
+            m_plotManager.setLogarithmicXAxis(plotId, m_logarithmicXAxis);
+        }
+
         qDebug() << "setupPlots() finished";
     } catch (const std::exception& e) {
         qCritical() << "Exception in setupPlots():" << e.what();
@@ -793,4 +869,104 @@ void MainWindow::on_actionExport_triggered()
                 plot->savePdf(filePath);
         }
     }
+}
+
+void MainWindow::loadRecentProjects()
+{
+    QSettings settings("RTPlotter", "RTPlotter");
+    m_recentProjects = settings.value("recentProjects").toStringList();
+}
+
+void MainWindow::saveRecentProjects()
+{
+    QSettings settings("RTPlotter", "RTPlotter");
+    settings.setValue("recentProjects", m_recentProjects);
+}
+
+void MainWindow::updateRecentProjectsMenu()
+{
+    // Get all actions currently in the menu
+    QList<QAction*> allActions = m_recentProjectsMenu->actions();
+    
+    // Find the separator (it's usually before the Clear action)
+    QAction* separatorAction = nullptr;
+    QAction* clearAction = nullptr;
+    
+    for (QAction* action : allActions) {
+        if (action->isSeparator()) {
+            separatorAction = action;
+        } else if (action->text() == "Clear List") {
+            clearAction = action;
+        }
+    }
+    
+    // Remove all actions except separator and clear action
+    for (QAction* action : allActions) {
+        if (action != separatorAction && action != clearAction) {
+            m_recentProjectsMenu->removeAction(action);
+        }
+    }
+    
+    if (m_recentProjects.isEmpty()) {
+        // Insert "No recent projects" before the separator
+        if (separatorAction) {
+            QAction* action = new QAction("No recent projects", this);
+            action->setEnabled(false);
+            m_recentProjectsMenu->insertAction(separatorAction, action);
+        }
+    } else {
+        // Add recent projects in reverse order to maintain display order (most recent first)
+        int total = m_recentProjects.size();
+        const int maxLabelLen = 60; // max characters to display in menu before ellipsizing
+        for (int i = m_recentProjects.size() - 1; i >= 0; --i) {
+            const QString& path = m_recentProjects[i];
+            int displayIndex = total - i; // compute 1-based display number (1 = most recent)
+            QFileInfo fi(path);
+            QString fileName = fi.fileName();
+            QString label = QString("%1. %2").arg(displayIndex).arg(fileName);
+            // Truncate label if too long and add ellipsis
+            if (label.length() > maxLabelLen) {
+                label = label.left(maxLabelLen - 3) + "...";
+            }
+            QAction* action = new QAction(label, this);
+            // Keep full path as tooltip for clarity (may not show in menu on some platforms)
+            action->setToolTip(path);
+            // Also set status tip and show full path in status bar when hovered
+            action->setStatusTip(path);
+            connect(action, &QAction::hovered, this, [this, path]() {
+                if (ui && ui->statusbar) ui->statusbar->showMessage(path);
+            });
+            if (separatorAction) {
+                m_recentProjectsMenu->insertAction(separatorAction, action);
+            } else {
+                m_recentProjectsMenu->addAction(action);
+            }
+            connect(action, &QAction::triggered, this, [this, path]() {
+                if (loadProjectFromPath(path)) {
+                    addRecentProject(path);
+                }
+            });
+            // Add submenu to reveal containing folder (useful to disambiguate same-named files)
+            QMenu* itemMenu = new QMenu(this);
+            // Create a themed icon (same style as other icons) for the reveal action
+            QAction* revealAction = new QAction(loadThemeAwareIcon(":/icons/icons/open.svg"), tr("Open containing folder"), this);
+            connect(revealAction, &QAction::triggered, this, [this, path]() {
+                QString dir = QFileInfo(path).absolutePath();
+                QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
+            });
+            itemMenu->addAction(revealAction);
+            action->setMenu(itemMenu);
+        }
+    }
+}
+
+void MainWindow::addRecentProject(const QString& path)
+{
+    m_recentProjects.removeAll(path);
+    m_recentProjects.prepend(path);
+    while (m_recentProjects.size() > 10) {
+        m_recentProjects.removeLast();
+    }
+    saveRecentProjects();
+    updateRecentProjectsMenu();
 }

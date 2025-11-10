@@ -38,6 +38,7 @@
      <string>File</string>
     </property>
     <addaction name="actionOpenProject"/>
+    <addaction name="menuRecentProjects"/>
     <addaction name="actionSaveProject"/>
     <addaction name="actionSaveProjectAs"/>
     <addaction name="separator"/>
@@ -45,6 +46,13 @@
     <addaction name="actionExport"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
+    <widget class="QMenu" name="menuRecentProjects">
+     <property name="title">
+      <string>Recent Projects</string>
+     </property>
+     <addaction name="separator"/>
+     <addaction name="actionClearRecentProjects"/>
+    </widget>
    </widget>
    <widget class="QMenu" name="menuConfiguration">
     <property name="title">
@@ -73,8 +81,8 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionOpenProject"/>
-   <addaction name="actionSaveProject"/>
+    <addaction name="actionOpenProject"/>
+    <addaction name="actionSaveProject"/>
    <addaction name="actionSaveProjectAs"/>
    <addaction name="separator"/>
    <addaction name="actionPause"/>
@@ -204,6 +212,11 @@
    </property>
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionClearRecentProjects">
+   <property name="text">
+    <string>Clear List</string>
    </property>
   </action>
  </widget>

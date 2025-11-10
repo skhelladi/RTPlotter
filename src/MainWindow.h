@@ -21,6 +21,8 @@ public:
 
     void setPlotConfig(const QList<PlotConfig>& configs);
     void setReader(const CSVReader& reader);
+    bool loadProjectFromPath(const QString& path);
+    void addRecentProject(const QString& path);
 
 private slots:
     void onFileChanged(const QString& path);
@@ -42,11 +44,17 @@ private:
     bool m_dirty;
     QLabel* m_projectLabel;
     QLabel* m_dirtyLabel;
+    QMenu* m_recentProjectsMenu;
+    QStringList m_recentProjects;
+    bool m_logarithmicYAxis;
+    bool m_logarithmicXAxis;
 
     void saveProjectToPath(const QString& path);
-    bool loadProjectFromPath(const QString& path);
     void importCSV(const QString& filePath = QString());
     void updateStatusBar();
+    void loadRecentProjects();
+    void saveRecentProjects();
+    void updateRecentProjectsMenu();
 protected:
     void closeEvent(QCloseEvent* event) override;
 

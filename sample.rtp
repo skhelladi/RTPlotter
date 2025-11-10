@@ -1,5 +1,7 @@
 {
     "dataFile": "/Users/khelladi/Codes/0.Computational_Physics/0.Tools/RTPlotter/sample.csv",
+    "logarithmicXAxis": false,
+    "logarithmicYAxis": false,
     "parser": {
         "filePath": "/Users/khelladi/Codes/0.Computational_Physics/0.Tools/RTPlotter/sample.csv",
         "hasHeader": true,

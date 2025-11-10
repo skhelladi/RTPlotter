@@ -49,6 +49,20 @@
     </widget>
    </item>
    <item>
+    <widget class="QCheckBox" name="logarithmicYAxisCheckBox">
+     <property name="text">
+      <string>Use Logarithmic Y-Axis</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="logarithmicXAxisCheckBox">
+     <property name="text">
+      <string>Use Logarithmic X-Axis</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

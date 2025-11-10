@@ -17,6 +17,8 @@ public:
     void resetZoom(int plotId);
     QList<QCustomPlot*> getPlots() const;
     void clearPlots();
+    void setLogarithmicYAxis(int plotId, bool logarithmic);
+    void setLogarithmicXAxis(int plotId, bool logarithmic);
 
 private:
     QMap<int, QCustomPlot*> m_plots;

@@ -126,3 +126,35 @@ void PlotManager::clearPlots()
     // and deleting splitter child widgets. Just clear the internal map.
     m_plots.clear();
 }
+
+void PlotManager::setLogarithmicYAxis(int plotId, bool logarithmic)
+{
+    if (!m_plots.contains(plotId)) {
+        qWarning() << "Cannot set logarithmic Y-axis: plot" << plotId << "does not exist";
+        return;
+    }
+    
+    QCustomPlot* plot = m_plots[plotId];
+    if (logarithmic) {
+        plot->yAxis->setScaleType(QCPAxis::stLogarithmic);
+    } else {
+        plot->yAxis->setScaleType(QCPAxis::stLinear);
+    }
+    plot->replot();
+}
+
+void PlotManager::setLogarithmicXAxis(int plotId, bool logarithmic)
+{
+    if (!m_plots.contains(plotId)) {
+        qWarning() << "Cannot set logarithmic X-axis: plot" << plotId << "does not exist";
+        return;
+    }
+    
+    QCustomPlot* plot = m_plots[plotId];
+    if (logarithmic) {
+        plot->xAxis->setScaleType(QCPAxis::stLogarithmic);
+    } else {
+        plot->xAxis->setScaleType(QCPAxis::stLinear);
+    }
+    plot->replot();
+}

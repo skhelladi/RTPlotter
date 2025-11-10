@@ -18,6 +18,8 @@ struct PlotConfig {
     Style style;
     int thickness;
     QColor color;
+    bool logarithmicYAxis = false;
+    bool logarithmicXAxis = false;
 };
 
 class PlotConfigDialog : public QDialog
@@ -29,6 +31,10 @@ public:
     ~PlotConfigDialog();
 
     QList<PlotConfig> getPlotConfig() const;
+    bool isLogarithmicYAxis() const;
+    bool isLogarithmicXAxis() const;
+    void setLogarithmicYAxis(bool value);
+    void setLogarithmicXAxis(bool value);
 
 private slots:
     void onColorButtonClicked();

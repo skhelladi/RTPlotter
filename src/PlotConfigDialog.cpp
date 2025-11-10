@@ -114,3 +114,23 @@ void PlotConfigDialog::onColorButtonClicked()
         }
     }
 }
+
+bool PlotConfigDialog::isLogarithmicYAxis() const
+{
+    return ui->logarithmicYAxisCheckBox->isChecked();
+}
+
+bool PlotConfigDialog::isLogarithmicXAxis() const
+{
+    return ui->logarithmicXAxisCheckBox->isChecked();
+}
+
+void PlotConfigDialog::setLogarithmicYAxis(bool value)
+{
+    ui->logarithmicYAxisCheckBox->setChecked(value);
+}
+
+void PlotConfigDialog::setLogarithmicXAxis(bool value)
+{
+    ui->logarithmicXAxisCheckBox->setChecked(value);
+}
