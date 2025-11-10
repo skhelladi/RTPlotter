@@ -141,7 +141,7 @@
     </iconset>
    </property>
    <property name="text">
-    <string>Export</string>
+    <string>Export Image...</string>
    </property>
   </action>
   <action name="actionOpenProject">

@@ -57,6 +57,37 @@ static QIcon loadThemeAwareIcon(const QString& path)
     return QIcon(pixmap);
 }
 
+// Load a theme-aware SVG icon and rotate it by `angle` degrees.
+static QIcon loadThemeAwareIconRotated(const QString& path, qreal angle)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return QIcon();
+    }
+    QString svgContent = QString::fromUtf8(file.readAll());
+    file.close();
+
+    QColor textColor = QApplication::palette().color(QPalette::WindowText);
+    QString colorHex = textColor.name();
+    svgContent.replace("fill=\"currentColor\"", QString("fill=\"%1\"").arg(colorHex));
+
+    QSvgRenderer renderer(svgContent.toUtf8());
+    QPixmap pixmap(16, 16);
+    pixmap.fill(Qt::transparent);
+    QPainter painter(&pixmap);
+    renderer.render(&painter);
+    painter.end();
+
+    if (!qFuzzyIsNull(angle)) {
+        QTransform t;
+        t.rotate(angle);
+        QPixmap rotated = pixmap.transformed(t, Qt::SmoothTransformation);
+        return QIcon(rotated);
+    }
+
+    return QIcon(pixmap);
+}
+
 // Special function for colored pause/resume icons
 static QIcon loadColoredIcon(const QString& path, const QColor& color = QColor())
 {
@@ -160,6 +191,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Differentiate icons: Open project vs Import data
     ui->actionOpenProject->setIcon(loadThemeAwareIcon(":/icons/icons/open.svg"));
+    // Use a dedicated import icon (upload) that matches the export icon style
     ui->actionImportData->setIcon(loadThemeAwareIcon(":/icons/icons/import.svg"));
     ui->actionSaveProject->setIcon(loadThemeAwareIcon(":/icons/icons/save.svg"));
     ui->actionSaveProjectAs->setIcon(loadThemeAwareIcon(":/icons/icons/save-as.svg"));
@@ -259,9 +291,18 @@ void MainWindow::on_actionAbout_triggered()
     // Create a rich About dialog that includes the logo
     QMessageBox about(this);
     about.setWindowTitle(tr("About RTPlotter"));
-    about.setText(tr("<b>RTPlotter</b><br/>Real-Time Data Plotter<br/>Author: Sofiane KHELLADI &lt;sofiane@khelladi.page&gt;"));
-    // Render the SVG at 64x64 and set as the icon pixmap
-    QPixmap logo = loadSvgPixmap(":/icons/icons/logo.svg", QSize(64,64));
+    // Build an HTML about text: app name bold, version under the name, rest smaller.
+    QString appVersion = QCoreApplication::applicationVersion();
+    if (appVersion.isEmpty()) appVersion = tr("Unknown");
+    about.setText(
+        tr("<b>RTPlotter</b><br/><small>Version %1</small><br/><br/>"
+           "<small>Real-Time Data Plotter<br/><br/>"
+           "<span style=\"white-space:nowrap\">Author: Sofiane KHELLADI &lt;sofiane@khelladi.page&gt;</span><br/><br/>"
+           "License: <a href='https://opensource.org/licenses/MIT'>MIT</a></small>")
+        .arg(appVersion)
+    );
+    // Render the SVG at 128x128 and set as the icon pixmap
+    QPixmap logo = loadSvgPixmap(":/icons/icons/logo.svg", QSize(128,128));
     if (!logo.isNull()) {
         about.setIconPixmap(logo);
     }
@@ -915,22 +956,16 @@ void MainWindow::updateRecentProjectsMenu()
     } else {
         // Add recent projects in reverse order to maintain display order (most recent first)
         int total = m_recentProjects.size();
-        const int maxLabelLen = 60; // max characters to display in menu before ellipsizing
         for (int i = m_recentProjects.size() - 1; i >= 0; --i) {
             const QString& path = m_recentProjects[i];
             int displayIndex = total - i; // compute 1-based display number (1 = most recent)
-            QFileInfo fi(path);
-            QString fileName = fi.fileName();
-            QString label = QString("%1. %2").arg(displayIndex).arg(fileName);
-            // Truncate label if too long and add ellipsis
-            if (label.length() > maxLabelLen) {
-                label = label.left(maxLabelLen - 3) + "...";
-            }
+            // Show the full absolute path in the label as requested
+            QString label = QString("%1. %2").arg(displayIndex).arg(path);
             QAction* action = new QAction(label, this);
             // Keep full path as tooltip for clarity (may not show in menu on some platforms)
             action->setToolTip(path);
             // Also set status tip and show full path in status bar when hovered
-            action->setStatusTip(path);
+            // action->setStatusTip(path);
             connect(action, &QAction::hovered, this, [this, path]() {
                 if (ui && ui->statusbar) ui->statusbar->showMessage(path);
             });
