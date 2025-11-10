@@ -16,8 +16,6 @@
 #include <QSvgRenderer>
 #include <QPixmap>
 #include <QPainter>
-#include <QDesktopServices>
-#include <QUrl>
 
 // Helper to render an SVG resource to a QPixmap at a given size
 static QPixmap loadSvgPixmap(const QString& path, const QSize& size)
@@ -946,16 +944,7 @@ void MainWindow::updateRecentProjectsMenu()
                     addRecentProject(path);
                 }
             });
-            // Add submenu to reveal containing folder (useful to disambiguate same-named files)
-            QMenu* itemMenu = new QMenu(this);
-            // Create a themed icon (same style as other icons) for the reveal action
-            QAction* revealAction = new QAction(loadThemeAwareIcon(":/icons/icons/open.svg"), tr("Open containing folder"), this);
-            connect(revealAction, &QAction::triggered, this, [this, path]() {
-                QString dir = QFileInfo(path).absolutePath();
-                QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
-            });
-            itemMenu->addAction(revealAction);
-            action->setMenu(itemMenu);
+            // (no submenu) keep action simple: triggered -> open project
         }
     }
 }
